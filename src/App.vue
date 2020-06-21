@@ -1,32 +1,40 @@
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view/>
-  </div>
+  <v-app>
+    <v-app-bar app flat color="grey lighten-3">
+      <v-toolbar-title class="app-title">Morse Code Editor</v-toolbar-title>
+    </v-app-bar>
+    <InputDisplay />
+  </v-app>
 </template>
 
+<script lang="ts">
+import Vue from "vue";
+import InputDisplay from "./components/InputDisplay.vue";
+
+export default Vue.extend({
+  name: "App",
+
+  components: {
+    InputDisplay
+  },
+
+  data: () => ({
+    //
+  })
+});
+</script>
+
 <style lang="scss">
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
+// Web Fontのちらつき対策
+html {
+  visibility: hidden;
 }
-
-#nav {
-  padding: 30px;
-
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-
-    &.router-link-exact-active {
-      color: #42b983;
-    }
-  }
+html.wf-active,
+html.loading-delay {
+  visibility: visible;
+}
+.app-title {
+  font-family: "Candal", sans-serif;
+  font-size: 2.25rem !important;
 }
 </style>
