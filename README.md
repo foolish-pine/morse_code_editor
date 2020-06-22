@@ -16,7 +16,7 @@
 <br>
 
 ## 制作に使用した言語・ツール
-TypeScript / Vue.js / Firebase / Vuetify
+TypeScript / Vue.js / Vuetify
 <br>
 <br>
 
