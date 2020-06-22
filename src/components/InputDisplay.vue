@@ -4,27 +4,67 @@
       <div class="d-flex mb-1">
         <v-btn class="mr-5" small @click="switchTranslateMode">
           {{ inputLanguage }}
-          <v-icon class="mx-2">mdi-ray-start-arrow</v-icon>
+          <v-icon class="mx-2">mdi-swap-horizontal</v-icon>
           {{ outputedText }}
         </v-btn>
         <v-btn color="error" small @click="deleteText">
           <v-icon class="mr-2">mdi-delete</v-icon>DELETE
         </v-btn>
         <v-spacer></v-spacer>
+        <v-dialog v-model="usageDialog" width="900">
+          <template v-slot:activator="{ on, attrs }">
+            <v-btn class="mr-5" small v-bind="attrs" v-on="on">How To Use</v-btn>
+          </template>
+          <v-card>
+            <v-card-title class="headline grey lighten-2" primary-title>How To Use Morse Code Editor</v-card-title>
+            <v-card-title>Morse Code Editorについて</v-card-title>
+            <v-card-text>Morse Code Editorはモールス符号⇔英単語の翻訳ができるエディタです！翻訳はリアルタイムでプレビューすることができます。</v-card-text>
+            <v-card-title>翻訳モードの切替え</v-card-title>
+            <v-card-text>
+              <v-btn class="mr-2" x-small>
+                MORSE CODE
+                <v-icon class="mx-2 mdi-18px">mdi-swap-horizontal</v-icon>ENGLISH
+              </v-btn>をクリックすることで、翻訳モードを切り替えます。
+            </v-card-text>
+            <v-card-title>モールス符号入力モードの切替え</v-card-title>
+            <v-card-text>
+              モールス符号の入力にはキーボードの「.」と「-」を使用する『キーボードモード』とスペースキーを電鍵に見立てて使用し符号を入力する『電鍵モード』の2種類があります。
+              <v-btn class="mr-2" x-small>
+                <v-icon class="mdi-18px">mdi-keyboard</v-icon>
+              </v-btn>
+              をクリックすることでキーボードモードに、
+              <v-btn class="mr-2" x-small>
+                <v-icon class="mdi-18px">mdi-gesture-double-tap</v-icon>
+              </v-btn>
+              をクリックすることで電鍵モードに切り替えます。
+            </v-card-text>
+            <v-card-title class="subtitle-2">キーボードモード</v-card-title>
+            <v-card-text>キーボードを使用してモールス符号を入力するモードです。<br>・ キーボードの「.」と「-」を使って入力してください。<br>・ 符号間は「 」(スペース)で、単語間は「 / 」（スペース+スラッシュ+スペース）で区切ってください。<br>・ バックスペースキーでひとつ前の符号やスペースを削除できます。</v-card-text>
+            <v-card-title class="subtitle-2">電鍵モード</v-card-title>
+            <v-card-text>スペースキーを電鍵に見立ててモールス符号を入力するモードです。<br>・ スペースキーを押してすぐ離すと短点「.」、スペースキーを少し長押ししてから離すと長点「-」を入力します。<br>・ スペースキーを離してから入力しない時間がしばらく続くと、1文字分の符号の入力が終了したとみなされ、「 」（スペース）が末尾に追加されます。<br>・ さらに入力しない時間が続くと、1単語分の符号の入力が終了されたとみなされ、半角スペースに続き「/ 」（スラッシュ+スペース）が末尾に追加されます。<br>・ バックスペースキーでひとつ前の符号やスペースを削除できます。</v-card-text>
+
+            <v-divider></v-divider>
+
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="primary" text @click="usageDialog = false">OK</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
         <v-btn
           class="mr-5"
           small
           @click="switchInputModeToKeyboard"
           :disabled="this.inputLanguage !== 'Morse Code' || this.inputMode === 'keyboard'"
         >
-          <v-icon class="mr-2">mdi-keyboard</v-icon>Keyboard Mode
+          <v-icon>mdi-keyboard</v-icon>
         </v-btn>
         <v-btn
           small
           @click="switchInputModeToSpaceKey"
           :disabled="this.inputLanguage !== 'Morse Code' || this.inputMode === 'telegraph'"
         >
-          <v-icon class="mr-2">mdi-gesture-double-tap</v-icon>Telegraph Key Mode
+          <v-icon>mdi-gesture-double-tap</v-icon>
         </v-btn>
       </div>
       <v-row class="textarea-container">
@@ -84,6 +124,7 @@ import { Vue } from "vue-property-decorator";
 
 @Component
 export default class InputDisplay extends Vue {
+  usageDialog = false;
   keyDownTime: number | undefined; // スペースキーを押したときのタイムスタンプ値
   keyUpTime: number | undefined; // スペースキーを離したときのタイムスタンプ値
   keyDownDuration: number | undefined; // スペースキーを押してから離すまでの時間（ミリ秒）
@@ -100,11 +141,11 @@ export default class InputDisplay extends Vue {
   inputMode: "keyboard" | "telegraph" = "telegraph"; // モールス符号の入力モード。
 
   keyboardModePlaceholder =
-    "キーボードを使用してモールス符号を入力するモードです。\n\n・このテキストエリアをクリックして半角モードで入力してください。\n・キーボードの「.」と「-」を使って入力してください。\n・符号間は「 」(スペース)で、単語間は「 / 」（スペース+スラッシュ+スペース）で区切ってください。\n・バックスペースキーでひとつ前の符号やスペースを削除できます。";
+    "キーボードを使用してモールス符号を入力するモードです。\n\nこのテキストエリアをクリックして半角モードで入力してください。";
   telegraghModePlaceholder =
-    "スペースキーを電鍵に見立ててモールス符号を入力するモードです。\n\n・このテキストエリアをクリックして半角モードで入力してください。\n・スペースキーを押してすぐ離すと短点「.」、スペースキーを少し長押ししてから離すと長点「-」を入力できます。\n・スペースキーを離してから入力しない時間がしばらく続くと、1文字分の符号の入力が終了したとみなされ、「 」（スペース）が末尾に追加されます。\n・さらに入力しない時間が続くと、1単語分の符号の入力が終了されたとみなされ、半角スペースに続き「/ 」（スラッシュ+スペース）が末尾に追加されます。\n・バックスペースキーでひとつ前の符号やスペースを削除できます。";
+    "スペースキーを電鍵に見立ててモールス符号を入力するモードです。\n\nこのテキストエリアをクリックして半角モードで入力してください。";
   englishModePlaceholder =
-    "英文をモールス信号に翻訳するモードです。\n\nこのテキストエリアに半角モードで入力してください。";
+    "英文をモールス信号に翻訳するモードです。\n\nこのテキストエリアに半角で入力してください。";
 
   // モールス符号→英数字の対応表
   morsePatternMap: { [s: string]: string } = {
