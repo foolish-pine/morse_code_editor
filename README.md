@@ -1,11 +1,11 @@
 # モールス符号エディタ『Morse Code Editor』
 
 ## デモ
-<!-- <img src="https://user-images.githubusercontent.com/59694183/83400616-1ece8500-a43e-11ea-9c18-a6e440b6f4f9.gif" width="500"> -->
+<img src="https://user-images.githubusercontent.com/59694183/85248336-80a56c00-b48b-11ea-86bf-f4733d640ae5.gif" width="500">
 <br>
 <br>
 
-<!-- [こちら](https://draggable-memo-app-foolish-pine.netlify.app/)からお使いいただけます。 -->
+[こちら](https://morse-code-editor.netlify.app/)からお使いいただけます。
 <br>
 <br>
 
@@ -21,7 +21,7 @@ TypeScript / Vue.js / Firebase / Vuetify
 <br>
 
 ## 制作時間
-20時間
+15時間
 <br>
 <br>
 
