@@ -34,7 +34,8 @@ html.loading-delay {
   visibility: visible;
 }
 .app-title {
-  font-family: "Candal", sans-serif;
+  font-family: "Volkhov", sans-serif;
   font-size: 2.25rem !important;
+  font-weight: 700;
 }
 </style>
