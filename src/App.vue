@@ -3,19 +3,19 @@
     <v-app-bar app flat color="grey lighten-3">
       <v-toolbar-title class="app-title">Morse Code Editor</v-toolbar-title>
     </v-app-bar>
-    <InputDisplay />
+    <InputCompiler />
   </v-app>
 </template>
 
 <script lang="ts">
 import Vue from "vue";
-import InputDisplay from "./components/InputDisplay.vue";
+import InputCompiler from "./components/InputCompiler.vue";
 
 export default Vue.extend({
   name: "App",
 
   components: {
-    InputDisplay
+    InputCompiler
   },
 
   data: () => ({

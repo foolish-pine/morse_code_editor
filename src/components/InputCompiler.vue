@@ -2,22 +2,27 @@
   <v-content class="content">
     <v-container class="pt-5s">
       <div class="d-flex mb-1">
-        <v-btn class="mr-5" small @click="switchTranslateMode">
-          {{ inputLanguage }}
+        <v-btn v-if="this.inputLanguage === 'Morse Code'" class="mr-5" small @click="switchTranslateMode">
+          Morse Code
           <v-icon class="mx-2">mdi-swap-horizontal</v-icon>
-          {{ outputedText }}
+          English
         </v-btn>
-        <v-btn color="error" small @click="deleteText">
-          <v-icon class="mr-2">mdi-delete</v-icon>DELETE
+        <v-btn v-else class="mr-5" small @click="switchTranslateMode">
+          English
+          <v-icon class="mx-2">mdi-swap-horizontal</v-icon>
+          Morse Code
+        </v-btn>
+        <v-btn color="error" small @click="clearText">
+          <v-icon class="mr-2">mdi-delete</v-icon>Clear
         </v-btn>
         <v-spacer></v-spacer>
-        <v-dialog v-model="usageDialog" width="900">
+        <v-dialog v-model="usageDialog" width="800">
           <template v-slot:activator="{ on, attrs }">
-            <v-btn class="mr-5" small v-bind="attrs" v-on="on">How To Use</v-btn>
+            <v-btn class="mr-5" small v-bind="attrs" v-on="on"><v-icon class="mr-2">mdi-account-question</v-icon>How To Use</v-btn>
           </template>
           <v-card>
-            <v-card-title class="headline grey lighten-2" primary-title>How To Use Morse Code Editor</v-card-title>
-            <v-card-title>Morse Code Editorについて</v-card-title>
+            <v-card-title class="headline grey lighten-2" primary-title>Morse Code Editor の使い方</v-card-title>
+            <v-card-title>Morse Code Editor について</v-card-title>
             <v-card-text>Morse Code Editorはモールス符号⇔英単語の翻訳ができるエディタです！翻訳はリアルタイムでプレビューすることができます。</v-card-text>
             <v-card-title>翻訳モードの切替え</v-card-title>
             <v-card-text>
@@ -63,14 +68,14 @@
         <v-btn
           class="mr-5"
           small
-          @click="switchInputModeToKeyboard"
+          @click="switchToKeyboardMode"
           :disabled="this.inputLanguage !== 'Morse Code' || this.inputMode === 'keyboard'"
         >
           <v-icon>mdi-keyboard</v-icon>
         </v-btn>
         <v-btn
           small
-          @click="switchInputModeToSpaceKey"
+          @click="switchToTelegraphMode"
           :disabled="this.inputLanguage !== 'Morse Code' || this.inputMode === 'telegraph'"
         >
           <v-icon>mdi-gesture-double-tap</v-icon>
@@ -104,7 +109,7 @@
             v-if="this.inputLanguage === 'English'"
             :value="englishText"
             @input="inputText"
-            :placeholder="englishModePlaceholder"
+            :placeholder="englishTranslateModePlaceholder"
             no-resize
             outlined
             height="100%"
@@ -132,112 +137,109 @@ import Component from "vue-class-component";
 import { Vue } from "vue-property-decorator";
 
 @Component
-export default class InputDisplay extends Vue {
+export default class InputCompiler extends Vue {
   usageDialog = false;
-  keyDownTime: number | undefined; // スペースキーを押したときのタイムスタンプ値
-  keyUpTime: number | undefined; // スペースキーを離したときのタイムスタンプ値
-  keyDownDuration: number | undefined; // スペースキーを押してから離すまでの時間（ミリ秒）
-  dotDuration = 70; //dotの長さ（ミリ秒）
-  dashDuration = this.dotDuration * 3; //dashの長さ（ミリ秒）。keyDownDurationがこの値未満ならドットを、以上ならダッシュを出力する
-  characterDuration = this.dotDuration * 7; //文字の入力間隔（ミリ秒）
-  wordDuration = this.dotDuration * 14; //単語の入力間隔（ミリ秒）
-  characterDurationTimer: number | undefined;
-  wordDurationTimer: number | undefined;
   morseText = "";
   englishText = "";
   inputLanguage: "Morse Code" | "English" = "Morse Code"; // 入力する言語
-  outputedText: "Morse Code" | "English" = "English"; // 翻訳後に出力される言語
-  inputMode: "keyboard" | "telegraph" = "telegraph"; // モールス符号の入力モード。
+  inputMode: "keyboard" | "telegraph" = "telegraph"; // モールス符号の入力モード
+  keydownTimestamp: number | undefined; // スペースキーを押したときのタイムスタンプ値
+  keyupTimestamp: number | undefined; // スペースキーを離したときのタイムスタンプ値
+  keydownDurationMs: number | undefined; // スペースキーを押してから離すまでの時間（ミリ秒）
+  dotDurationMs = 70; //dotの長さ（ミリ秒）
+  dashDurationMs = this.dotDurationMs * 3; //dashの長さ（ミリ秒）。keydownDurationMsがこの値未満ならドットを、以上ならダッシュを出力する
+  characterDurationMs = this.dotDurationMs * 7; //文字の入力間隔（ミリ秒）
+  wordDurationMs = this.dotDurationMs * 14; //単語の入力間隔（ミリ秒）
+  characterDurationTimer: number | undefined;
+  wordDurationTimer: number | undefined;
 
   keyboardModePlaceholder =
     "キーボードを使用してモールス符号を入力するモードです。\n\nこのテキストエリアをクリックして半角モードで入力してください。";
   telegraghModePlaceholder =
     "スペースキーを電鍵に見立ててモールス符号を入力するモードです。\n\nこのテキストエリアをクリックして半角モードで入力してください。";
-  englishModePlaceholder =
+  englishTranslateModePlaceholder =
     "英文をモールス信号に翻訳するモードです。\n\nこのテキストエリアに半角で入力してください。";
 
   // モールス符号→英数字の対応表
-  morsePatternMap: { [s: string]: string } = {
-    ".-": "A",
-    "-...": "B",
-    "-.-.": "C",
-    "-..": "D",
-    ".": "E",
-    "..-.": "F",
-    "--.": "G",
-    "....": "H",
-    "..": "I",
-    ".---": "J",
-    "-.-": "K",
-    ".-..": "L",
-    "--": "M",
-    "-.": "N",
-    "---": "O",
-    ".--.": "P",
-    "--.-": "Q",
-    ".-.": "R",
-    "...": "S",
-    "-": "T",
-    "..-": "U",
-    "...-": "V",
-    ".--": "W",
-    "-..-": "X",
-    "-.--": "Y",
-    "--..": "Z",
-    "-----": "0",
-    ".----": "1",
-    "..---": "2",
-    "...--": "3",
-    "....-": "4",
-    ".....": "5",
-    "-....": "6",
-    "--...": "7",
-    "---..": "8",
-    "----.": "9",
-    ".-.-.-": ".",
-    "--..--": ",",
-    "..--..": "?",
-    ".----.": "'",
-    "-....-": "-",
-    "/": " " // スラッシュは単語間の区切りを示す
-  };
+  morsePatternMap = new Map([
+    [".-", "A"],
+    ["-...", "B"],
+    ["-.-.", "C"],
+    ["-..", "D"],
+    [".", "E"],
+    ["..-.", "F"],
+    ["--.", "G"],
+    ["....", "H"],
+    ["..", "I"],
+    [".---", "J"],
+    ["-.-", "K"],
+    [".-..", "L"],
+    ["--", "M"],
+    ["-.", "N"],
+    ["---", "O"],
+    [".--.", "P"],
+    ["--.-", "Q"],
+    [".-.", "R"],
+    ["...", "S"],
+    ["-", "T"],
+    ["..-", "U"],
+    ["...-", "V"],
+    [".--", "W"],
+    ["-..-", "X"],
+    ["-.--", "Y"],
+    ["--..", "Z"],
+    ["-----", "0"],
+    [".----", "1"],
+    ["..---", "2"],
+    ["...--", "3"],
+    ["....-", "4"],
+    [".....", "5"],
+    ["-....", "6"],
+    ["--...", "7"],
+    ["---..", "8"],
+    ["----.", "9"],
+    [".-.-.-", "."],
+    ["--..--", ","],
+    ["..--..", "?"],
+    [".----.", "'"],
+    ["-....-", "-"],
+    ["/", " "] // スラッシュは単語間の区切りを示す
+  ]);
 
   // 英数字の対応表→モールス符号の対応表
-  morsePatternMapReverse: { [s: string]: string } = {};
+  morsePatternMapReverse = new Map()
 
   mounted(): void {
     // morsePatternMapのキーと値を反転させたmorsePatternMapReverseを生成する
-    const patternMapKey: string[] = Object.keys(this.morsePatternMap);
-    const patternMapValues: string[] = Object.values(this.morsePatternMap);
-    for (let i = 0; i < patternMapKey.length; i++) {
-      this.morsePatternMapReverse[patternMapValues[i]] = patternMapKey[i];
+    for (let i = 0; i < this.morsePatternMap.size; i++) {
+      this.morsePatternMap.forEach((value, key) => {
+        this.morsePatternMapReverse.set(value, key)
+      })
     }
   }
 
-  // 入力される言語の切替え
+  // 翻訳モードの切替え
   switchTranslateMode(): void {
     if (this.inputLanguage === "Morse Code") {
       this.inputLanguage = "English";
-      this.outputedText = "Morse Code";
     } else {
       this.inputLanguage = "Morse Code";
-      this.outputedText = "English";
     }
   }
 
   // テキストエリアをクリアする
-  deleteText(): void {
+  clearText(): void {
     this.morseText = "";
     this.englishText = "";
   }
 
   // モールス符号の入力モードをキーボードモードに変更
-  switchInputModeToKeyboard(): void {
+  switchToKeyboardMode(): void {
     this.inputMode = "keyboard";
   }
 
   // モールス符号の入力モードを電鍵モードに変更
-  switchInputModeToSpaceKey(): void {
+  switchToTelegraphMode(): void {
     this.inputMode = "telegraph";
   }
 
@@ -245,13 +247,13 @@ export default class InputDisplay extends Vue {
     if (this.inputLanguage === "English") {
       this.englishText = input.toUpperCase();
     }
-    if (this.inputMode === "keyboard") {
+    if (this.inputLanguage === "Morse Code" && this.inputMode === "keyboard") {
       this.morseText = input;
     }
   }
 
   keydownSpaceKey(): void {
-    this.keyDownTime = Date.now();
+    this.keydownTimestamp = Date.now();
 
     // characterDurationTimerとwordDurationTimerをリセットする
     if (typeof this.characterDurationTimer !== "undefined") {
@@ -263,83 +265,55 @@ export default class InputDisplay extends Vue {
   }
 
   keyupSpaceKey(): void {
-    this.keyUpTime = Date.now();
+    this.keyupTimestamp = Date.now();
 
     if (
-      typeof this.keyUpTime !== "undefined" &&
-      typeof this.keyDownTime !== "undefined"
+      typeof this.keyupTimestamp !== "undefined" &&
+      typeof this.keydownTimestamp !== "undefined"
     ) {
-      this.keyDownDuration = this.keyUpTime - this.keyDownTime;
+      this.keydownDurationMs = this.keyupTimestamp - this.keydownTimestamp;
     }
 
     if (
-      typeof this.keyDownDuration !== "undefined" &&
-      this.keyDownDuration < this.dashDuration
+      typeof this.keydownDurationMs !== "undefined" &&
+      this.keydownDurationMs < this.dashDurationMs
     ) {
-      // スペースキーが押下されている時間(keyDownDuration)がdashDuration未満の場合、ドットを出力
+      // スペースキーが押下されている時間(keydownDurationMs)がdashDurationMs未満の場合、ドットを出力
       this.morseText += ".";
     } else {
-      // dashDuration以上の場合、ダッシュを出力
+      // dashDurationMs以上の場合、ダッシュを出力
       this.morseText += "-";
     }
 
-    /* 前の入力から次の入力までの間隔がcharacterDurationより長い場合、
+    /* 前の入力から次の入力までの間隔がcharacterDurationMsより長い場合、
     一文字の入力が終了したとみなし、inputの末尾にスペースを追加する*/
     this.characterDurationTimer = setTimeout(() => {
       this.morseText += " ";
-    }, this.characterDuration);
+    }, this.characterDurationMs);
 
-    /* 前の入力から次の入力までの間隔がwordDurationより長い場合、
+    /* 前の入力から次の入力までの間隔がwordDurationMsより長い場合、
     一単語の入力が終了したとみなし、inputの末尾に上記のスペースに加えスラッシュとスペースを追加する*/
     this.wordDurationTimer = setTimeout(() => {
       this.morseText += "/ ";
-      const inputArray = this.morseText.split(" ");
-
-      for (let i = 0; i < inputArray.length; i++) {
-        if (Object.keys(this.morsePatternMap).includes(inputArray[i])) {
-          inputArray[i] = this.morsePatternMap[inputArray[i]];
-        }
-      }
-    }, this.wordDuration);
+    }, this.wordDurationMs);
   }
 
   // モールス符号が入力されたとき、morsePatternMapと照らし合わせて対応する英数字を返す
   get outputedEnglishText(): string {
-    const morseTextArray: string[] = this.morseText.split(" ");
-    for (let i = 0; i < morseTextArray.length; i++) {
-      if (Object.keys(this.morsePatternMap).includes(morseTextArray[i])) {
-        morseTextArray[i] = this.morsePatternMap[morseTextArray[i]];
-      }
-    }
-
-    return morseTextArray.join("");
+    const splitedMorseText: string[] = this.morseText.split(" ");
+    const rawOutputedEnglishText = splitedMorseText.map((value) => {
+      return this.morsePatternMap.get(value)
+    })
+    return rawOutputedEnglishText.join("");
   }
 
   // 英数字が入力されたとき、morsePatternMapReverseと照らし合わせて対応するモールス符号を返す
   get outputedMorseText(): string {
-    let englishWordArray: string[] = this.englishText.split(" ");
-    englishWordArray = englishWordArray.filter(value => value !== "");
-    const joinedMorseWordArray: string[] = [];
-
-    for (let i = 0; i < englishWordArray.length; i++) {
-      const splitedMorseWordArray: string[] = [];
-      const splitedEnglishWord: string[] = englishWordArray[i].split("");
-
-      for (let j = 0; j < splitedEnglishWord.length; j++) {
-        if (
-          Object.keys(this.morsePatternMapReverse).includes(
-            splitedEnglishWord[j]
-          )
-        ) {
-          splitedMorseWordArray[j] = this.morsePatternMapReverse[
-            splitedEnglishWord[j]
-          ];
-        }
-      }
-      joinedMorseWordArray[i] = splitedMorseWordArray.join(" ");
-    }
-
-    return joinedMorseWordArray.join(" / ");
+    const splitedEnglishText: string[] = this.englishText.split("");
+    const rawOutputedMorseText = splitedEnglishText.map((value) => {
+      return this.morsePatternMapReverse.get(value)
+    })
+    return rawOutputedMorseText.join(" ");
   }
 }
 </script>
