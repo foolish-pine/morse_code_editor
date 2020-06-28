@@ -132,7 +132,7 @@ import Component from "vue-class-component";
 import { Vue } from "vue-property-decorator";
 
 @Component
-export default class InputDisplay extends Vue {
+export default class InputCompiler extends Vue {
   usageDialog = false;
   keyDownTime: number | undefined; // スペースキーを押したときのタイムスタンプ値
   keyUpTime: number | undefined; // スペースキーを離したときのタイムスタンプ値
