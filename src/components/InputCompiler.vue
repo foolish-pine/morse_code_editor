@@ -21,8 +21,8 @@
             <v-btn class="mr-5" small v-bind="attrs" v-on="on"><v-icon class="mr-2">mdi-account-question</v-icon>How To Use</v-btn>
           </template>
           <v-card>
-            <v-card-title class="headline grey lighten-2" primary-title>『Morse Code Editor』の使い方</v-card-title>
-            <v-card-title>Morse Code Editorについて</v-card-title>
+            <v-card-title class="headline grey lighten-2" primary-title>Morse Code Editor の使い方</v-card-title>
+            <v-card-title>Morse Code Editor について</v-card-title>
             <v-card-text>Morse Code Editorはモールス符号⇔英単語の翻訳ができるエディタです！翻訳はリアルタイムでプレビューすることができます。</v-card-text>
             <v-card-title>翻訳モードの切替え</v-card-title>
             <v-card-text>
@@ -161,60 +161,60 @@ export default class InputCompiler extends Vue {
     "英文をモールス信号に翻訳するモードです。\n\nこのテキストエリアに半角で入力してください。";
 
   // モールス符号→英数字の対応表
-  morsePatternMap: { [s: string]: string } = {
-    ".-": "A",
-    "-...": "B",
-    "-.-.": "C",
-    "-..": "D",
-    ".": "E",
-    "..-.": "F",
-    "--.": "G",
-    "....": "H",
-    "..": "I",
-    ".---": "J",
-    "-.-": "K",
-    ".-..": "L",
-    "--": "M",
-    "-.": "N",
-    "---": "O",
-    ".--.": "P",
-    "--.-": "Q",
-    ".-.": "R",
-    "...": "S",
-    "-": "T",
-    "..-": "U",
-    "...-": "V",
-    ".--": "W",
-    "-..-": "X",
-    "-.--": "Y",
-    "--..": "Z",
-    "-----": "0",
-    ".----": "1",
-    "..---": "2",
-    "...--": "3",
-    "....-": "4",
-    ".....": "5",
-    "-....": "6",
-    "--...": "7",
-    "---..": "8",
-    "----.": "9",
-    ".-.-.-": ".",
-    "--..--": ",",
-    "..--..": "?",
-    ".----.": "'",
-    "-....-": "-",
-    "/": " " // スラッシュは単語間の区切りを示す
-  };
+  morsePatternMap = new Map([
+    [".-", "A"],
+    ["-...", "B"],
+    ["-.-.", "C"],
+    ["-..", "D"],
+    [".", "E"],
+    ["..-.", "F"],
+    ["--.", "G"],
+    ["....", "H"],
+    ["..", "I"],
+    [".---", "J"],
+    ["-.-", "K"],
+    [".-..", "L"],
+    ["--", "M"],
+    ["-.", "N"],
+    ["---", "O"],
+    [".--.", "P"],
+    ["--.-", "Q"],
+    [".-.", "R"],
+    ["...", "S"],
+    ["-", "T"],
+    ["..-", "U"],
+    ["...-", "V"],
+    [".--", "W"],
+    ["-..-", "X"],
+    ["-.--", "Y"],
+    ["--..", "Z"],
+    ["-----", "0"],
+    [".----", "1"],
+    ["..---", "2"],
+    ["...--", "3"],
+    ["....-", "4"],
+    [".....", "5"],
+    ["-....", "6"],
+    ["--...", "7"],
+    ["---..", "8"],
+    ["----.", "9"],
+    [".-.-.-", "."],
+    ["--..--", ","],
+    ["..--..", "?"],
+    [".----.", "'"],
+    ["-....-", "-"],
+    ["/", " "] // スラッシュは単語間の区切りを示す
+  ]);
 
   // 英数字の対応表→モールス符号の対応表
-  morsePatternMapReverse: { [s: string]: string } = {};
+  morsePatternMapReverse = new Map()
 
   mounted(): void {
     // morsePatternMapのキーと値を反転させたmorsePatternMapReverseを生成する
-    const patternMapKey: string[] = Object.keys(this.morsePatternMap);
-    const patternMapValues: string[] = Object.values(this.morsePatternMap);
-    for (let i = 0; i < patternMapKey.length; i++) {
-      this.morsePatternMapReverse[patternMapValues[i]] = patternMapKey[i];
+    for (let i = 0; i < this.morsePatternMap.size; i++) {
+      this.morsePatternMap.forEach((value, key) => {
+        this.morsePatternMapReverse.set(value, key)
+      })
     }
   }
 
@@ -285,63 +285,35 @@ export default class InputCompiler extends Vue {
       this.morseText += "-";
     }
 
-    /* 前の入力から次の入力までの間隔がcharacterDurationより長い場合、
+    /* 前の入力から次の入力までの間隔がcharacterDurationMsより長い場合、
     一文字の入力が終了したとみなし、inputの末尾にスペースを追加する*/
     this.characterDurationTimer = setTimeout(() => {
       this.morseText += " ";
     }, this.characterDurationMs);
 
-    /* 前の入力から次の入力までの間隔がwordDurationより長い場合、
+    /* 前の入力から次の入力までの間隔がwordDurationMsより長い場合、
     一単語の入力が終了したとみなし、inputの末尾に上記のスペースに加えスラッシュとスペースを追加する*/
     this.wordDurationTimer = setTimeout(() => {
       this.morseText += "/ ";
-      const inputArray = this.morseText.split(" ");
-
-      for (let i = 0; i < inputArray.length; i++) {
-        if (Object.keys(this.morsePatternMap).includes(inputArray[i])) {
-          inputArray[i] = this.morsePatternMap[inputArray[i]];
-        }
-      }
     }, this.wordDurationMs);
   }
 
   // モールス符号が入力されたとき、morsePatternMapと照らし合わせて対応する英数字を返す
   get outputedEnglishText(): string {
-    const morseTextArray: string[] = this.morseText.split(" ");
-    for (let i = 0; i < morseTextArray.length; i++) {
-      if (Object.keys(this.morsePatternMap).includes(morseTextArray[i])) {
-        morseTextArray[i] = this.morsePatternMap[morseTextArray[i]];
-      }
-    }
-
-    return morseTextArray.join("");
+    const splitedMorseText: string[] = this.morseText.split(" ");
+    const rawOutputedEnglishText = splitedMorseText.map((value) => {
+      return this.morsePatternMap.get(value)
+    })
+    return rawOutputedEnglishText.join("");
   }
 
   // 英数字が入力されたとき、morsePatternMapReverseと照らし合わせて対応するモールス符号を返す
   get outputedMorseText(): string {
-    let englishWordArray: string[] = this.englishText.split(" ");
-    englishWordArray = englishWordArray.filter(value => value !== "");
-    const joinedMorseWordArray: string[] = [];
-
-    for (let i = 0; i < englishWordArray.length; i++) {
-      const splitedMorseWordArray: string[] = [];
-      const splitedEnglishWord: string[] = englishWordArray[i].split("");
-
-      for (let j = 0; j < splitedEnglishWord.length; j++) {
-        if (
-          Object.keys(this.morsePatternMapReverse).includes(
-            splitedEnglishWord[j]
-          )
-        ) {
-          splitedMorseWordArray[j] = this.morsePatternMapReverse[
-            splitedEnglishWord[j]
-          ];
-        }
-      }
-      joinedMorseWordArray[i] = splitedMorseWordArray.join(" ");
-    }
-
-    return joinedMorseWordArray.join(" / ");
+    const splitedEnglishText: string[] = this.englishText.split("");
+    const rawOutputedMorseText = splitedEnglishText.map((value) => {
+      return this.morsePatternMapReverse.get(value)
+    })
+    return rawOutputedMorseText.join(" ");
   }
 }
 </script>
