@@ -119,12 +119,12 @@
           <div
             v-if="this.inputLanguage === 'Morse Code'"
             class="markdown-body"
-            v-html="outputedEnglishText"
+            v-html="outputEnglishText"
           ></div>
           <div
             v-if="this.inputLanguage === 'English'"
             class="markdown-body"
-            v-html="outputedMorseText"
+            v-html="outputMorseText"
           ></div>
         </v-col>
       </v-row>
@@ -207,7 +207,7 @@ export default class InputCompiler extends Vue {
   ]);
 
   // 英数字の対応表→モールス符号の対応表
-  morsePatternMapReverse = new Map()
+  morsePatternMapReverse: Map<string, string> = new Map()
 
   mounted(): void {
     // morsePatternMapのキーと値を反転させたmorsePatternMapReverseを生成する
@@ -299,21 +299,21 @@ export default class InputCompiler extends Vue {
   }
 
   // モールス符号が入力されたとき、morsePatternMapと照らし合わせて対応する英数字を返す
-  get outputedEnglishText(): string {
+  get outputEnglishText(): string {
     const splitedMorseText: string[] = this.morseText.split(" ");
-    const rawOutputedEnglishText = splitedMorseText.map((value) => {
+    const rawOutputEnglishText = splitedMorseText.map((value) => {
       return this.morsePatternMap.get(value)
     })
-    return rawOutputedEnglishText.join("");
+    return rawOutputEnglishText.join("");
   }
 
   // 英数字が入力されたとき、morsePatternMapReverseと照らし合わせて対応するモールス符号を返す
-  get outputedMorseText(): string {
+  get outputMorseText(): string {
     const splitedEnglishText: string[] = this.englishText.split("");
-    const rawOutputedMorseText = splitedEnglishText.map((value) => {
+    const rawOutputMorseText = splitedEnglishText.map((value) => {
       return this.morsePatternMapReverse.get(value)
     })
-    return rawOutputedMorseText.join(" ");
+    return rawOutputMorseText.join(" ");
   }
 }
 </script>
