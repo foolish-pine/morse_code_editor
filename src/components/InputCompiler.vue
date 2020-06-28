@@ -11,12 +11,12 @@
           <v-icon class="mr-2">mdi-delete</v-icon>DELETE
         </v-btn>
         <v-spacer></v-spacer>
-        <v-dialog v-model="usageDialog" width="900">
+        <v-dialog v-model="usageDialog" width="800">
           <template v-slot:activator="{ on, attrs }">
-            <v-btn class="mr-5" small v-bind="attrs" v-on="on">How To Use</v-btn>
+            <v-btn class="mr-5" small v-bind="attrs" v-on="on"><v-icon class="mr-2">mdi-account-question</v-icon>How To Use</v-btn>
           </template>
           <v-card>
-            <v-card-title class="headline grey lighten-2" primary-title>How To Use Morse Code Editor</v-card-title>
+            <v-card-title class="headline grey lighten-2" primary-title>『Morse Code Editor』の使い方</v-card-title>
             <v-card-title>Morse Code Editorについて</v-card-title>
             <v-card-text>Morse Code Editorはモールス符号⇔英単語の翻訳ができるエディタです！翻訳はリアルタイムでプレビューすることができます。</v-card-text>
             <v-card-title>翻訳モードの切替え</v-card-title>
