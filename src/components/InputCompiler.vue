@@ -2,13 +2,18 @@
   <v-content class="content">
     <v-container class="pt-5s">
       <div class="d-flex mb-1">
-        <v-btn class="mr-5" small @click="switchTranslateMode">
-          {{ inputLanguage }}
+        <v-btn v-if="this.inputLanguage === 'Morse Code'" class="mr-5" small @click="switchTranslateMode">
+          Morse Code
           <v-icon class="mx-2">mdi-swap-horizontal</v-icon>
-          {{ outputedText }}
+          English
         </v-btn>
-        <v-btn color="error" small @click="deleteText">
-          <v-icon class="mr-2">mdi-delete</v-icon>DELETE
+        <v-btn v-else class="mr-5" small @click="switchTranslateMode">
+          English
+          <v-icon class="mx-2">mdi-swap-horizontal</v-icon>
+          Morse Code
+        </v-btn>
+        <v-btn color="error" small @click="clearText">
+          <v-icon class="mr-2">mdi-delete</v-icon>Clear
         </v-btn>
         <v-spacer></v-spacer>
         <v-dialog v-model="usageDialog" width="800">
@@ -63,14 +68,14 @@
         <v-btn
           class="mr-5"
           small
-          @click="switchInputModeToKeyboard"
+          @click="switchToKeyboardMode"
           :disabled="this.inputLanguage !== 'Morse Code' || this.inputMode === 'keyboard'"
         >
           <v-icon>mdi-keyboard</v-icon>
         </v-btn>
         <v-btn
           small
-          @click="switchInputModeToSpaceKey"
+          @click="switchToTelegraphMode"
           :disabled="this.inputLanguage !== 'Morse Code' || this.inputMode === 'telegraph'"
         >
           <v-icon>mdi-gesture-double-tap</v-icon>
@@ -104,7 +109,7 @@
             v-if="this.inputLanguage === 'English'"
             :value="englishText"
             @input="inputText"
-            :placeholder="englishModePlaceholder"
+            :placeholder="englishTranslateModePlaceholder"
             no-resize
             outlined
             height="100%"
@@ -134,26 +139,25 @@ import { Vue } from "vue-property-decorator";
 @Component
 export default class InputCompiler extends Vue {
   usageDialog = false;
-  keyDownTime: number | undefined; // スペースキーを押したときのタイムスタンプ値
-  keyUpTime: number | undefined; // スペースキーを離したときのタイムスタンプ値
-  keyDownDuration: number | undefined; // スペースキーを押してから離すまでの時間（ミリ秒）
-  dotDuration = 70; //dotの長さ（ミリ秒）
-  dashDuration = this.dotDuration * 3; //dashの長さ（ミリ秒）。keyDownDurationがこの値未満ならドットを、以上ならダッシュを出力する
-  characterDuration = this.dotDuration * 7; //文字の入力間隔（ミリ秒）
-  wordDuration = this.dotDuration * 14; //単語の入力間隔（ミリ秒）
-  characterDurationTimer: number | undefined;
-  wordDurationTimer: number | undefined;
   morseText = "";
   englishText = "";
   inputLanguage: "Morse Code" | "English" = "Morse Code"; // 入力する言語
-  outputedText: "Morse Code" | "English" = "English"; // 翻訳後に出力される言語
-  inputMode: "keyboard" | "telegraph" = "telegraph"; // モールス符号の入力モード。
+  inputMode: "keyboard" | "telegraph" = "telegraph"; // モールス符号の入力モード
+  keydownTimestamp: number | undefined; // スペースキーを押したときのタイムスタンプ値
+  keyupTimestamp: number | undefined; // スペースキーを離したときのタイムスタンプ値
+  keydownDurationMs: number | undefined; // スペースキーを押してから離すまでの時間（ミリ秒）
+  dotDurationMs = 70; //dotの長さ（ミリ秒）
+  dashDurationMs = this.dotDurationMs * 3; //dashの長さ（ミリ秒）。keydownDurationMsがこの値未満ならドットを、以上ならダッシュを出力する
+  characterDurationMs = this.dotDurationMs * 7; //文字の入力間隔（ミリ秒）
+  wordDurationMs = this.dotDurationMs * 14; //単語の入力間隔（ミリ秒）
+  characterDurationTimer: number | undefined;
+  wordDurationTimer: number | undefined;
 
   keyboardModePlaceholder =
     "キーボードを使用してモールス符号を入力するモードです。\n\nこのテキストエリアをクリックして半角モードで入力してください。";
   telegraghModePlaceholder =
     "スペースキーを電鍵に見立ててモールス符号を入力するモードです。\n\nこのテキストエリアをクリックして半角モードで入力してください。";
-  englishModePlaceholder =
+  englishTranslateModePlaceholder =
     "英文をモールス信号に翻訳するモードです。\n\nこのテキストエリアに半角で入力してください。";
 
   // モールス符号→英数字の対応表
@@ -214,30 +218,28 @@ export default class InputCompiler extends Vue {
     }
   }
 
-  // 入力される言語の切替え
+  // 翻訳モードの切替え
   switchTranslateMode(): void {
     if (this.inputLanguage === "Morse Code") {
       this.inputLanguage = "English";
-      this.outputedText = "Morse Code";
     } else {
       this.inputLanguage = "Morse Code";
-      this.outputedText = "English";
     }
   }
 
   // テキストエリアをクリアする
-  deleteText(): void {
+  clearText(): void {
     this.morseText = "";
     this.englishText = "";
   }
 
   // モールス符号の入力モードをキーボードモードに変更
-  switchInputModeToKeyboard(): void {
+  switchToKeyboardMode(): void {
     this.inputMode = "keyboard";
   }
 
   // モールス符号の入力モードを電鍵モードに変更
-  switchInputModeToSpaceKey(): void {
+  switchToTelegraphMode(): void {
     this.inputMode = "telegraph";
   }
 
@@ -245,13 +247,13 @@ export default class InputCompiler extends Vue {
     if (this.inputLanguage === "English") {
       this.englishText = input.toUpperCase();
     }
-    if (this.inputMode === "keyboard") {
+    if (this.inputLanguage === "Morse Code" && this.inputMode === "keyboard") {
       this.morseText = input;
     }
   }
 
   keydownSpaceKey(): void {
-    this.keyDownTime = Date.now();
+    this.keydownTimestamp = Date.now();
 
     // characterDurationTimerとwordDurationTimerをリセットする
     if (typeof this.characterDurationTimer !== "undefined") {
@@ -263,23 +265,23 @@ export default class InputCompiler extends Vue {
   }
 
   keyupSpaceKey(): void {
-    this.keyUpTime = Date.now();
+    this.keyupTimestamp = Date.now();
 
     if (
-      typeof this.keyUpTime !== "undefined" &&
-      typeof this.keyDownTime !== "undefined"
+      typeof this.keyupTimestamp !== "undefined" &&
+      typeof this.keydownTimestamp !== "undefined"
     ) {
-      this.keyDownDuration = this.keyUpTime - this.keyDownTime;
+      this.keydownDurationMs = this.keyupTimestamp - this.keydownTimestamp;
     }
 
     if (
-      typeof this.keyDownDuration !== "undefined" &&
-      this.keyDownDuration < this.dashDuration
+      typeof this.keydownDurationMs !== "undefined" &&
+      this.keydownDurationMs < this.dashDurationMs
     ) {
-      // スペースキーが押下されている時間(keyDownDuration)がdashDuration未満の場合、ドットを出力
+      // スペースキーが押下されている時間(keydownDurationMs)がdashDurationMs未満の場合、ドットを出力
       this.morseText += ".";
     } else {
-      // dashDuration以上の場合、ダッシュを出力
+      // dashDurationMs以上の場合、ダッシュを出力
       this.morseText += "-";
     }
 
@@ -287,7 +289,7 @@ export default class InputCompiler extends Vue {
     一文字の入力が終了したとみなし、inputの末尾にスペースを追加する*/
     this.characterDurationTimer = setTimeout(() => {
       this.morseText += " ";
-    }, this.characterDuration);
+    }, this.characterDurationMs);
 
     /* 前の入力から次の入力までの間隔がwordDurationより長い場合、
     一単語の入力が終了したとみなし、inputの末尾に上記のスペースに加えスラッシュとスペースを追加する*/
@@ -300,7 +302,7 @@ export default class InputCompiler extends Vue {
           inputArray[i] = this.morsePatternMap[inputArray[i]];
         }
       }
-    }, this.wordDuration);
+    }, this.wordDurationMs);
   }
 
   // モールス符号が入力されたとき、morsePatternMapと照らし合わせて対応する英数字を返す
